@@ -35,7 +35,12 @@ function displayActivities(activities) {
                 <p class="participants-title"><strong>Participants:</strong></p>
                 ${details.participants.length > 0 
                     ? `<ul class="participants-list">
-                        ${details.participants.map(email => `<li>${email}</li>`).join('')}
+                        ${details.participants.map(email => `
+                          <li>
+                            <span class="participant-email">${email}</span>
+                            <span class="delete-icon" onclick="deleteParticipant('${name}', '${email}')" title="Remove participant">🗑️</span>
+                          </li>
+                        `).join('')}
                        </ul>`
                     : '<p class="no-participants">No participants yet. Be the first to sign up!</p>'
                 }
@@ -104,4 +109,31 @@ function showMessage(text, type) {
   setTimeout(() => {
     messageDiv.classList.add("hidden");
   }, 5000);
+}
+
+async function deleteParticipant(activityName, email) {
+  if (!confirm(`Are you sure you want to unregister ${email} from ${activityName}?`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showMessage(data.message, "success");
+      // Reload activities to show updated participant list
+      await loadActivities();
+    } else {
+      showMessage(data.detail || "Failed to unregister participant", "error");
+    }
+  } catch (error) {
+    showMessage("An error occurred. Please try again.", "error");
+  }
 }
